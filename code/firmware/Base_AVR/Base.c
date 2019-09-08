@@ -104,7 +104,7 @@ int main(void){
 
         // EEPROM
         //uint8_t ByteOfData;
-		totalReg = eeprom_read_byte((uint8_t*)(1));
+		totalReg = eeprom_read_byte((uint8_t*)(101));
 
         //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 		//flagTx = 0xFF;
@@ -170,13 +170,13 @@ ISR(USART_TX_vect){
 
 void txbyte(){
 	//UCSR0A &= ~(1<<TXC0);
-	UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
+	UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr + 100));
     //UDR0 = frameEeprom[totalReg-addr];
     if(addr==0){
     	//UCSR0B &= ~(1<<TXCIE0);
 		flagTx=0;
         totalReg=1;
-		eeprom_write_byte((uint8_t*)(1),totalReg);
+		eeprom_write_byte((uint8_t*)(101),totalReg);
     }
     else{
     	addr--;
@@ -299,51 +299,51 @@ UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 // Armazena dados na EEPROM
 void save_eeprom(){
         if(estadoEeprom==0){
-                eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[10]);
+                eeprom_write_byte((uint8_t*)(totalReg+100),frameEeprom[10]);
                 estadoEeprom=1;
         }
         else if(estadoEeprom==1){
-                eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[9]);
+                eeprom_write_byte((uint8_t*)(totalReg+99),frameEeprom[9]);
                 estadoEeprom=2;
         }
         else if(estadoEeprom==2){
-                eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[8]);
+                eeprom_write_byte((uint8_t*)(totalReg+98),frameEeprom[8]);
                 estadoEeprom=3;
         }
         else if(estadoEeprom==3){
-                eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[7]);
+                eeprom_write_byte((uint8_t*)(totalReg+97),frameEeprom[7]);
                 estadoEeprom=4;
         }
         else if(estadoEeprom==4){
-                eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[6]);
+                eeprom_write_byte((uint8_t*)(totalReg+96),frameEeprom[6]);
                 estadoEeprom=5;
         }
         else if(estadoEeprom==5){
-                eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[5]);
+                eeprom_write_byte((uint8_t*)(totalReg+95),frameEeprom[5]);
                 estadoEeprom=6;
         }
         else if(estadoEeprom==6){
-                eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[4]);
+                eeprom_write_byte((uint8_t*)(totalReg+94),frameEeprom[4]);
                 estadoEeprom=7;
         }
         else if(estadoEeprom==7){
-                eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[3]);
+                eeprom_write_byte((uint8_t*)(totalReg+93),frameEeprom[3]);
                 estadoEeprom=8;
         }
         else if(estadoEeprom==8){
-                eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[2]);
+                eeprom_write_byte((uint8_t*)(totalReg+92),frameEeprom[2]);
                 estadoEeprom=9;
         }
         else if(estadoEeprom==9){
-                eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[1]);
+                eeprom_write_byte((uint8_t*)(totalReg+91),frameEeprom[1]);
                 estadoEeprom=10;
         }
         else if(estadoEeprom==10){
-                eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[0]);
+                eeprom_write_byte((uint8_t*)(totalReg+90),frameEeprom[0]);
                 estadoEeprom=11;
         }
         else if(estadoEeprom==11){
-                eeprom_write_byte((uint8_t*)(1),totalReg);
+                eeprom_write_byte((uint8_t*)(101),totalReg);
 				if(totalReg==12){
 					PORTB |= LED1;
 				}
