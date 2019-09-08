@@ -1,0 +1,12 @@
+# Writing all output to: E:\Engenharia El??trica 8?? per??odo\T??picos Especiais Sistemas Digitais\Projeto xBee\MCU\Base AVR Proteus\Base.log
+set pad_wire_necking on
+bus diagonal
+fanout 5
+route 50
+clean 2
+route 50 16
+clean 2
+filter 5
+recorner diagonal
+status_file
+
