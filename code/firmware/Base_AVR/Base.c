@@ -26,11 +26,15 @@ FUSES =
 volatile int cont; // Tamanho do frame
 volatile char resposta; // Var temporária para recepção de UDR0(UART)
 volatile int addr; // Endereço de EEPROM
-volatile int totalReg; // Total de registro da EEPROM
+volatile int addr2;
+volatile int totalReg; // Total de registros da tabela 2 da EEPROM
+volatile int totalRegTab1; // Total de registros da tabela 1 da EEPROM
 volatile int frame[7]; // frame de comando para xBee
-volatile int frameEeprom[40]; // frame para armazenar na EEPROM
+volatile int frameEeprom[11]; // frame para armazenar na EEPROM
 volatile int frameAtual[40]; // frame recebido
+volatile int sensorEeprom[12]; // frame para armazenamento da tabela 1
 volatile int flagEeprom; // 0- Não precisa armazenar na EEPROM; 1- Precisa
+volatile int flagTab1; // Para armazenar na tabela 1
 volatile int tipoEnvio; // 0- uC pata PC; 1- uC para xBee
 volatile int comand; // Estados
 volatile int estadoEeprom; // Estados da EEPROM
@@ -54,6 +58,7 @@ int main(void){
         //CLKPR |= 0x04;
         cont = 8;
         addr = 0;
+		addr2 = 0;
         tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
         flagEeprom = 0;
         contador = 0; // contador para Timer
@@ -105,6 +110,7 @@ int main(void){
         // EEPROM
         //uint8_t ByteOfData;
 		totalReg = eeprom_read_byte((uint8_t*)(101));
+		totalRegTab1 = eeprom_read_byte((uint8_t*)(1));  //eeprom_read_byte((uint8_t*)(1));
 
         //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 		//flagTx = 0xFF;
@@ -169,18 +175,28 @@ ISR(USART_TX_vect){
 }*/
 
 void txbyte(){
-	//UCSR0A &= ~(1<<TXC0);
-	UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr + 100));
-    //UDR0 = frameEeprom[totalReg-addr];
-    if(addr==0){
-    	//UCSR0B &= ~(1<<TXCIE0);
-		flagTx=0;
-        totalReg=1;
-		eeprom_write_byte((uint8_t*)(101),totalReg);
-    }
-    else{
-    	addr--;
-    }
+	if(addr2==0){
+		// Enviando tabela 2
+		UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr + 100));
+		if(addr==0){
+			flagTx=0;
+        	totalReg=1;
+			eeprom_write_byte((uint8_t*)(101),totalReg);
+			totalRegTab1=1;
+			_delay_ms(500);
+			eeprom_write_byte((uint8_t*)(1),totalRegTab1);
+    	}
+    	else{
+    		addr--;
+    	}	
+	}
+	else{
+		// Enviando tabela 1
+		UDR0 = eeprom_read_byte((uint8_t*)(totalRegTab1 - addr2+1));
+		addr2--;	
+	}
+
+	
 }
 
 // Interrupção UART RX
@@ -231,30 +247,40 @@ ISR(USART_RX_vect){
 //**************Caso seja um frame de sample*************************************
 
 if(frameAtual[3]==0x92){
-        frameEeprom[0]=data[0]; // Dia
-        frameEeprom[1]=data[1]; // Mês
-        frameEeprom[2]=data[2]; // Ano
-        frameEeprom[3]=hora[2]; // Hora
-        frameEeprom[4]=hora[1]; // Minuto
-        frameEeprom[5]=hora[0]; // Segundo
-        frameEeprom[6]='A'; // ID_H
-        frameEeprom[7]='0'; // ID_L
-        frameEeprom[8]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
-        frameEeprom[9]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
-        frameEeprom[10]='\n'; // Quebra de linha
+	
+	sensorEeprom[0]='$'; // Alguma coisa da cabeça de Besch
+	sensorEeprom[1]='A'; // ID H
+	sensorEeprom[2]='0'; // ID L
+	sensorEeprom[3]=frameAtual[4];
+	sensorEeprom[4]=frameAtual[5];
+	sensorEeprom[5]=frameAtual[6];
+	sensorEeprom[6]=frameAtual[7];
+	sensorEeprom[7]=frameAtual[8];
+	sensorEeprom[8]=frameAtual[9];
+	sensorEeprom[9]=frameAtual[10];
+	sensorEeprom[10]=frameAtual[11];
+	sensorEeprom[11]='\n';
 
-        totalReg+=11;
-        flagEeprom=1; // Armazena na EEPROM
-        estadoEeprom=0;
+	totalRegTab1+=12;
+	flagTab1 = 1;
 
-		//PORTB|=LED1;
-        
-        //PORTB &= ~LED1;
-        /*
-        if(addr==11){
-			PORTB|=LED1;
-		}*/
-        
+
+
+    frameEeprom[0]=data[0]; // Dia
+    frameEeprom[1]=data[1]; // Mês
+    frameEeprom[2]=data[2]; // Ano
+    frameEeprom[3]=hora[2]; // Hora
+    frameEeprom[4]=hora[1]; // Minuto
+    frameEeprom[5]=hora[0]; // Segundo
+    frameEeprom[6]='A'; // ID_H
+    frameEeprom[7]='0'; // ID_L
+    frameEeprom[8]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
+    frameEeprom[9]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
+    frameEeprom[10]='\n'; // Quebra de linha
+
+    totalReg+=11;
+    flagEeprom=1; // Armazena na EEPROM
+    estadoEeprom=0;   
         
 
 
@@ -281,6 +307,9 @@ if(frameAtual[3]==0x92){
 
 addr = totalReg;
 addr--; // Para começar com o endereço da eeprom 1
+
+addr2 = totalRegTab1;
+//addr2--;
 
 flagTx=0x20;
 UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
@@ -347,10 +376,70 @@ void save_eeprom(){
 				if(totalReg==12){
 					PORTB |= LED1;
 				}
-                TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
-                flagEeprom = 0; // Acabou de armazenar na EEPROM
                 //PORTB|=LED1;
+                if(flagTab1==1){
+					estadoEeprom=12;
+				}
+				else{
+					estadoEeprom=0;
+					flagEeprom = 0; // Acabou de armazenar na EEPROM
+					TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
+				}
+        }
+		else if(estadoEeprom==12){
+                eeprom_write_byte((uint8_t*)(totalRegTab1),sensorEeprom[11]);
+                estadoEeprom=13;
+        }
+		else if(estadoEeprom==13){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-1),sensorEeprom[10]);
+                estadoEeprom=14;
+        }
+		else if(estadoEeprom==14){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-2),sensorEeprom[9]);
+                estadoEeprom=15;
+        }
+		else if(estadoEeprom==15){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-3),sensorEeprom[8]);
+                estadoEeprom=16;
+        }
+		else if(estadoEeprom==16){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-4),sensorEeprom[7]);
+                estadoEeprom=17;
+        }
+		else if(estadoEeprom==17){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-5),sensorEeprom[6]);
+                estadoEeprom=18;
+        }
+		else if(estadoEeprom==18){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-6),sensorEeprom[5]);
+                estadoEeprom=19;
+        }
+		else if(estadoEeprom==19){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-7),sensorEeprom[4]);
+                estadoEeprom=20;
+        }
+		else if(estadoEeprom==20){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-8),sensorEeprom[3]);
+                estadoEeprom=21;
+        }
+		else if(estadoEeprom==21){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-9),sensorEeprom[2]);
+                estadoEeprom=22;
+        }
+		else if(estadoEeprom==22){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-10),sensorEeprom[1]);
+                estadoEeprom=23;
+        }
+		else if(estadoEeprom==23){
+                eeprom_write_byte((uint8_t*)(totalRegTab1-11),sensorEeprom[0]);
+                estadoEeprom=24;
+        }
+		else if(estadoEeprom==24){
+                eeprom_write_byte((uint8_t*)(1),totalRegTab1);
                 estadoEeprom=0;
+				flagEeprom = 0; // Acabou de armazenar na EEPROM
+				flagTab1 = 0; // Acabou de armazenar na tabela 1 da EEPROM
+				TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
         }
 }
 
