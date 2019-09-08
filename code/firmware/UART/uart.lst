@@ -1,0 +1,139 @@
+CCS PCM C Compiler, Version 4.049, 30767               25-mai-11 06:13
+
+               Filename: uart.lst
+
+               ROM used: 20 words (0%)
+                         Largest free fragment is 2048
+               RAM used: 6 (2%) at main() level
+                         6 (2%) worst case
+               Stack:    0 locations
+
+*
+0000:  MOVLW  00
+0001:  MOVWF  0A
+0002:  GOTO   004
+0003:  NOP
+.................... #include "16f877A.h" 
+.................... //////// Standard Header file for the PIC16F877A device //////////////// 
+.................... #device PIC16F877A 
+.................... #list 
+....................  
+.................... #include "16f877Adef.h" 
+.................... // Definições de endereços, PIC16F877A 
+....................  
+.................... // endereços USART 
+.................... #byte TXSTA = 0x98 
+.................... #byte RCSTA = 0x18 
+.................... #byte SPBRG = 0x99 
+.................... #byte TXREG = 0x19 
+.................... #byte RCREG = 0x1A 
+....................  
+.................... // endereços gerais 
+.................... #byte INTCON	= 0x0B 
+.................... #byte PIR1		= 0x0C 
+.................... #byte PIE1		= 0x8C 
+.................... #byte OPTIONREG	= 0x81 
+....................  
+.................... // endereços para PORTB 
+.................... #byte TRISA	= 0x85 
+.................... #byte TRISB	= 0x86 
+.................... #byte TRISC	= 0x87 
+.................... #byte PORTA	= 0x05 
+.................... #byte PORTB	= 0x06 
+.................... #byte PORTC	= 0x07 
+....................  
+.................... // definição dos bits 
+.................... #bit CSRC	= TXSTA.7 
+.................... #bit TX9	= TXSTA.6 
+.................... #bit TXEN	= TXSTA.5 
+.................... #bit SYNC	= TXSTA.4 
+.................... #bit BRGH	= TXSTA.2 
+.................... #bit TRMT	= TXSTA.1 
+.................... #bit TX9D	= TXSTA.0 
+....................  
+.................... #bit SPEN	= RCSTA.7 
+.................... #bit RX9	= RCSTA.6 
+.................... #bit SREN	= RCSTA.5 
+.................... #bit CREN	= RCSTA.4 
+.................... #bit ADDEN	= RCSTA.3 
+.................... #bit FERR	= RCSTA.2 
+.................... #bit OERR	= RCSTA.1 
+.................... #bit RX9D	= RCSTA.0 
+....................  
+.................... #bit GIE	= INTCON.7 
+.................... #bit PEIE	= INTCON.6 
+.................... #bit INTE	= INTCON.4 
+.................... #bit RBIE	= INTCON.3 
+....................  
+.................... #bit RCIF	= PIR1.5 
+.................... #bit TXIF	= PIR1.4 
+....................  
+.................... #bit ADIE	= PIE1.6 
+.................... #bit RCIE	= PIE1.5 
+.................... #bit TXIE	= PIE1.4 
+....................  
+.................... #bit TRISB_0	= TRISB.0 
+.................... #bit TRISB_1	= TRISB.1 
+.................... #bit TRISB_2	= TRISB.2 
+.................... #bit TRISB_3	= TRISB.3 
+.................... #bit TRISB_4	= TRISB.4 
+.................... #bit TRISB_5	= TRISB.5 
+.................... #bit TRISB_6	= TRISB.6 
+.................... #bit TRISB_7	= TRISB.7 
+....................  
+.................... #bit PORTA_0	= PORTA.0 
+.................... #bit PORTA_1	= PORTA.1 
+.................... #bit PORTA_2	= PORTA.2 
+.................... #bit PORTA_3	= PORTA.3 
+.................... #bit PORTA_4	= PORTA.4 
+.................... #bit PORTA_5	= PORTA.5 
+.................... #bit PORTA_6	= PORTA.6 
+.................... #bit PORTA_7	= PORTA.7 
+....................  
+.................... #bit PORTB_0	= PORTB.0 
+.................... #bit PORTB_1	= PORTB.1 
+.................... #bit PORTB_2	= PORTB.2 
+.................... #bit PORTB_3	= PORTB.3 
+.................... #bit PORTB_4	= PORTB.4 
+.................... #bit PORTB_5	= PORTB.5 
+.................... #bit PORTB_6	= PORTB.6 
+.................... #bit PORTB_7	= PORTB.7 
+....................  
+.................... #bit PORTC_0	= PORTC.0 
+.................... #bit PORTC_1	= PORTC.1 
+.................... #bit PORTC_2	= PORTC.2 
+.................... #bit PORTC_3	= PORTC.3 
+.................... #bit PORTC_4	= PORTC.4 
+.................... #bit PORTC_5	= PORTC.5 
+.................... #bit PORTC_6	= PORTC.6 
+.................... #bit PORTC_7	= PORTC.7 
+....................  
+.................... #bit INTEDG 	= OPTIONREG.6 
+....................  
+....................  
+....................  
+.................... void main(){ 
+0004:  CLRF   04
+0005:  BCF    03.7
+0006:  MOVLW  1F
+0007:  ANDWF  03,F
+0008:  BSF    03.5
+0009:  BSF    1F.0
+000A:  BSF    1F.1
+000B:  BSF    1F.2
+000C:  BCF    1F.3
+000D:  MOVLW  07
+000E:  MOVWF  1C
+.................... 	TRISA	= 0; 
+000F:  CLRF   05
+.................... 	PORTA_0	= 1; 
+0010:  BCF    03.5
+0011:  BSF    05.0
+....................  
+.................... 	while(1); 
+0012:  GOTO   012
+.................... } 
+0013:  SLEEP
+
+Configuration Fuses:
+   Word  1: 3F73   RC NOWDT PUT NODEBUG NOPROTECT BROWNOUT NOLVP NOCPD NOWRT

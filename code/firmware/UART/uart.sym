@@ -1,0 +1,124 @@
+004-005 @READ_PROGRAM_MEMORY8.P1
+004     @WRITE_PROGRAM_MEMORY8.P2
+005     PORTA
+005.0   PORTA_0
+005.1   PORTA_1
+005.2   PORTA_2
+005.3   PORTA_3
+005.4   PORTA_4
+005.5   PORTA_5
+005.6   PORTA_6
+005.7   PORTA_7
+006     PORTB
+006.0   PORTB_0
+006.1   PORTB_1
+006.2   PORTB_2
+006.3   PORTB_3
+006.4   PORTB_4
+006.5   PORTB_5
+006.6   PORTB_6
+006.7   PORTB_7
+007     PORTC
+007.0   PORTC_0
+007.1   PORTC_1
+007.2   PORTC_2
+007.3   PORTC_3
+007.4   PORTC_4
+007.5   PORTC_5
+007.6   PORTC_6
+007.7   PORTC_7
+008     PSP_DATA
+00B     INTCON
+00B.3   RBIE
+00B.4   INTE
+00B.6   PEIE
+00B.7   GIE
+00C     PIR1
+00C.4   TXIF
+00C.5   RCIF
+015     CCP_1_LOW
+015-016 CCP_1
+016     CCP_1_HIGH
+018.0   RX9D
+018     RCSTA
+018.1   OERR
+018.2   FERR
+018.3   ADDEN
+018.4   CREN
+018.5   SREN
+018.6   RX9
+018.7   SPEN
+019     TXREG
+01A     RCREG
+01B     CCP_2_LOW
+01B-01C CCP_2
+01C     CCP_2_HIGH
+077     @SCRATCH
+078     @SCRATCH
+078     _RETURN_
+079     @SCRATCH
+07A     @SCRATCH
+07B     @SCRATCH
+081     OPTIONREG
+081.6   INTEDG
+085     TRISA
+086     TRISB
+086.0   TRISB_0
+086.1   TRISB_1
+086.2   TRISB_2
+086.3   TRISB_3
+086.4   TRISB_4
+086.5   TRISB_5
+086.6   TRISB_6
+086.7   TRISB_7
+087     TRISC
+08C     PIE1
+08C.4   TXIE
+08C.5   RCIE
+08C.6   ADIE
+098.0   TX9D
+098     TXSTA
+098.1   TRMT
+098.2   BRGH
+098.4   SYNC
+098.5   TXEN
+098.6   TX9
+098.7   CSRC
+099     SPBRG
+09C.6   C1OUT
+09C.7   C2OUT
+10D-10E @WRITE_PROGRAM_MEMORY8.P1
+10D-10E @READ_PROGRAM_MEMORY8.P2
+
+0004  main
+0004  @cinit
+
+Project Directory:
+    E:\Engenharia Elétrica 8º período\Tópicos Especiais Sistemas Digitais\Projeto xBee\UART\
+
+Project Files:
+    uart.c
+    16f877A.h
+    16f877Adef.h
+
+Units:
+    uart.c (main)
+
+Compiler Settings:
+    Processor:      PIC16F877A
+    Pointer Size:   16
+    ADC Range:      0-255
+    Opt Level:      9
+    Short,Int,Long: UNSIGNED: 1,8,16
+    Float,Double:   32,32
+
+Output Files:
+    Errors:      uart.err
+    Ext Symbols: uart.esym
+    INHX8:       uart.hex
+    Symbols:     uart.sym
+    List:        uart.lst
+    Debug/COFF:  uart.cof
+    Project:     uart.PJT
+    Call Tree:   uart.tre
+    Statistics:  uart.sta
