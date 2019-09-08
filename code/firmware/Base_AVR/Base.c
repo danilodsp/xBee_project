@@ -8,7 +8,7 @@ MCU: AtMega328P
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
-//#define F_CPU 1000000UL  // 1 MHz
+#define F_CPU 1000000UL  // 1 MHz
 
 #define BAUD 103
 #define LED1 0x08 // Envia dados para PC
@@ -44,6 +44,8 @@ volatile unsigned int hora[3]; // seg, min e hora
 volatile unsigned int data[3]; // dia, mes e ano
 int TEMP1; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
 int TEMP2;
+volatile int flagTx;
+volatile unsigned int aEnviar;
 
 int main(void){
         DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Saída
@@ -61,6 +63,7 @@ int main(void){
         tam1 = 0;
         comand = 0;
         checksum = 0;
+		flagTx = 0;
         TEMP1 = 0xC2;
         TEMP2 = 0xF6;
 
@@ -86,6 +89,7 @@ int main(void){
 
         // UART0
         UCSR0A &= ~(1<<TXC0); // Última transmissão completa
+		//UCSR0A &= ~(1<<UDRE0); // Buffer vazio
         UCSR0B = (1<<RXEN0)|(1<<TXEN0); // Habilita o RX e TX
         UCSR0C = 0x06; // 8bits de transmissão
         UBRR0L = BAUD; // Set Baud Rate
@@ -104,15 +108,20 @@ int main(void){
         //uint8_t ByteOfData;
 
         //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+		//flagTx = 0xFF;
 
         // Loop
         while(1){
-                if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
-                        PORTB |= LED4;
-                }
+                /*if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
+                    PORTB |= LED4;
+                }*/
                 if(flagEeprom==1){
-                        TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
+                    TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
                 }
+				if((flagTx)&(UCSR0A&(1<<UDRE0))){// &~(UCSR0A|~(1<<TXC0))
+					txbyte();
+					PORTB|=LED1;
+				}
         };
 }
 /*
@@ -137,11 +146,12 @@ ISR(PCINT0_vect){
                 PORTB |= LED3;
         }
 }*/
-
+/*
 // Interrupção UART TX
 ISR(USART_TX_vect){
         if(tipoEnvio == 0){
                 UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
+				PORTB|=LED1;
                 //UDR0 = frameEeprom[totalReg-addr];
                 if(addr==0){
                         UCSR0B &= ~(1<<TXCIE0);
@@ -158,6 +168,20 @@ ISR(USART_TX_vect){
                         UCSR0B &= ~(1<<TXCIE0);
                 }
         }
+}*/
+
+void txbyte(){
+	//UCSR0A &= ~(1<<TXC0);
+	UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
+    //UDR0 = frameEeprom[totalReg-addr];
+    if(addr==0){
+    	//UCSR0B &= ~(1<<TXCIE0);
+		flagTx=0;
+        totalReg=0;
+    }
+    else{
+    	addr--;
+    }
 }
 
 // Interrupção UART RX
@@ -266,10 +290,14 @@ if(frameAtual[3]==0x92){
         frameEeprom[0]=totalReg;
         flagEeprom=1; // Armazena na EEPROM
         estadoEeprom=0;
+
+		//PORTB|=LED1;
         
-        PORTB &= ~LED1;
-        
-        
+        //PORTB &= ~LED1;
+        /*
+        if(addr==11){
+			PORTB|=LED1;
+		}*/
         
         
 
@@ -295,6 +323,27 @@ if(frameAtual[3]==0x92){
                 if(resposta==0xFE){
 //***************Tratamento de requisição de dados*******************************                        
 
+//UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+/*
+UDR0 = 0x41;
+UDR0 = 0x33;
+
+if((~UCSR0A&(1<<UDRE0))){
+	PORTB|=LED1;
+}
+
+
+_delay_ms(10000);
+_delay_ms(10000);
+_delay_ms(10000);
+_delay_ms(10000);
+
+if(UCSR0A&(1<<UDRE0)){
+	PORTB&=~LED1;
+}*/
+
+
+flagTx=0x20;
 UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 //PORTB|=LED1;
 
@@ -359,7 +408,7 @@ void save_eeprom(){
                 TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
                 addr = totalReg;
                 flagEeprom = 0; // Acabou de armazenar na EEPROM
-                PORTB|=LED1;
+                //PORTB|=LED1;
                 estadoEeprom=0;
         }
 }
