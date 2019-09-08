@@ -226,7 +226,11 @@ if(frameAtual[3]==0x92){
         
         sensorEeprom[0]='$'; // Alguma coisa da cabeça de Besch
         sensorEeprom[1]='A'; // ID H
-        sensorEeprom[2]='0'; // ID L
+		if(frameAtual[11] == 0xA4){
+			sensorEeprom[2] = '1';
+		}else{
+			sensorEeprom[2]='0'; // ID L
+		}
         sensorEeprom[3]=frameAtual[4]; // Endereço do xBee
         sensorEeprom[4]=frameAtual[5];
         sensorEeprom[5]=frameAtual[6];
@@ -251,7 +255,11 @@ if(frameAtual[3]==0x92){
     frameEeprom[4]=hora[1]; // Minuto
     frameEeprom[5]=hora[0]; // Segundo
     frameEeprom[6]='A'; // ID_H
-    frameEeprom[7]='0'; // ID_L
+	if(frameAtual[11] == 0xA4){
+		frameEeprom[7] = '1';
+	}else{
+		frameEeprom[7]='0'; // ID L
+	}
     frameEeprom[8]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
     frameEeprom[9]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
     frameEeprom[10]='\n'; // Quebra de linha
