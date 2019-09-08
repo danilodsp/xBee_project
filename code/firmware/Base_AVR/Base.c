@@ -8,7 +8,7 @@ MCU: AtMega328P
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
-#define F_CPU 1000000UL  // 1 MHz
+//#define F_CPU 1000000UL  // 1 MHz
 
 #define BAUD 103
 #define LED1 0x08 // Envia dados para PC
@@ -33,17 +33,23 @@ volatile int frameAtual[40]; // frame recebido
 volatile int flagEeprom; // 0- Não precisa armazenar na EEPROM; 1- Precisa
 volatile int tipoEnvio; // 0- uC pata PC; 1- uC para xBee
 volatile int comand; // Estados
+volatile int estadoEeprom; // Estados da EEPROM
 volatile unsigned long int checksum;
 volatile int tam0;
 volatile int tam1;
 volatile int i;
 volatile unsigned int contador; // Contador do Timer0
+// Hora e Data
+volatile unsigned int hora[3]; // seg, min e hora
+volatile unsigned int data[3]; // dia, mes e ano
+int TEMP1; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
+int TEMP2;
 
 int main(void){
 	DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Saída
 	SREG = 1<<SREG_I;
 	//CLKPR |= 1<<CLKPCE;
-	//CLKPR = 0x04;
+	//CLKPR |= 0x04;
 	cont = 8;
 	addr = 0;
 	totalReg = 0;
@@ -55,6 +61,15 @@ int main(void){
 	tam1 = 0;
 	comand = 0;
 	checksum = 0;
+	TEMP1 = 0xC2;
+	TEMP2 = 0xF6;
+
+	data[0]=10; // Dia
+	data[1]=07; // Mês
+	data[2]=11; // Ano
+	hora[0]=55; // Segundo
+	hora[1]=29; // Minuto
+	hora[2]=19; // Hora
 
 	frame[0] = 0x7E; //7E
 	frame[1] = 0x00; //00
@@ -80,7 +95,11 @@ int main(void){
 	// Timer0
 	TIMSK0 &= ~(1<<TOIE0);
 	TCCR0B = 0x05; // Prescaller 1024
-
+/*
+	// Timer1
+    TIMSK1 &= ~(1<<TOIE1);
+    TCCR1B = 0x05; // Prescaller 1024
+*/
 	// EEPROM
 	//uint8_t ByteOfData;
 
@@ -150,7 +169,7 @@ ISR(USART_RX_vect){
 	if(comand==0){
 		if(resposta==0x7E){ // Recebe dados do xBee
 		comand = 1; // Próximo estado
-		PORTB &= ~(LED1);
+		PORTB &= ~LED1;
 		}
 		else if(resposta==0x01){ // Recebe comando do PC
 			comand = 4;
@@ -190,18 +209,67 @@ ISR(USART_RX_vect){
 
 if(frameAtual[3]==0x92){
 	addr=totalReg;
+	
+	addr++;
+	frameEeprom[addr]=data[0]; // Dia
+	
+	addr++;
+	frameEeprom[addr]=data[1]; // Mês
+
+	addr++;
+	frameEeprom[addr]=data[2]; // Ano
+
+	addr++;
+	frameEeprom[addr]=hora[2]; // Hora
+
+	addr++;
+	frameEeprom[addr]=hora[1]; // Minuto
+
+	addr++;
+	frameEeprom[addr]=hora[0]; // Segundo
+
+	/*
+	addr++;
+	frameEeprom[addr]=26; // Dia
+	
+	addr++;
+	frameEeprom[addr]=05; // Mês
+
+	addr++;
+	frameEeprom[addr]=11; // Ano
+
+	addr++;
+	frameEeprom[addr]=15; // Hora
+
+	addr++;
+	frameEeprom[addr]=36; // Minuto
+
+	addr++;
+	frameEeprom[addr]=21; // Segundo*/
+
+	addr++;
+	frameEeprom[addr]='A'; // ID_H
+
+	addr++;
+	frameEeprom[addr]='0'; // ID_L
+
 	addr++;
 	frameEeprom[addr]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
+
 	addr++;
 	frameEeprom[addr]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
+
+	addr++;
+	frameEeprom[addr]='\n'; // Quebra de linha
+
 	totalReg=addr;
 	frameEeprom[0]=totalReg;
 	flagEeprom=1; // Armazena na EEPROM
-	PORTB &= ~(LED1);
-
-	/*if(totalReg==6){
-		PORTB|=LED1;
-	}*/
+	estadoEeprom=0;
+	
+	//PORTB &= ~LED1;
+	
+	
 	
 	
 
@@ -228,7 +296,7 @@ if(frameAtual[3]==0x92){
 //***************Tratamento de requisição de dados*******************************			
 
 UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-
+PORTB|=LED1;
 
 
 
@@ -242,25 +310,135 @@ UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 
 // Armazena dados na EEPROM
 void save_eeprom(){
-	eeprom_write_byte((uint8_t*)(totalReg-addr),frameEeprom[totalReg-addr]);
-	addr--;
-	if(addr<1){
+	if(estadoEeprom==0){
 		eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[totalReg]);
-		flagEeprom = 0; // Acabou de armazenar na EEPROM
+		estadoEeprom=1;
+	}
+	else if(estadoEeprom==1){
+		eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[totalReg-1]);
+		estadoEeprom=2;
+	}
+	else if(estadoEeprom==2){
+		eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[totalReg-2]);
+		estadoEeprom=3;
+	}
+	else if(estadoEeprom==3){
+		eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[totalReg-3]);
+		estadoEeprom=4;
+	}
+	else if(estadoEeprom==4){
+		eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[totalReg-4]);
+		estadoEeprom=5;
+	}
+	else if(estadoEeprom==5){
+		eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[totalReg-5]);
+		estadoEeprom=6;
+	}
+	else if(estadoEeprom==6){
+		eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[totalReg-6]);
+		estadoEeprom=7;
+	}
+	else if(estadoEeprom==7){
+		eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[totalReg-7]);
+		estadoEeprom=8;
+	}
+	else if(estadoEeprom==8){
+		eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[totalReg-8]);
+		estadoEeprom=9;
+	}
+	else if(estadoEeprom==9){
+		eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[totalReg-9]);
+		estadoEeprom=10;
+	}
+	else if(estadoEeprom==10){
+		eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[totalReg-10]);
+		estadoEeprom=11;
+	}
+	else if(estadoEeprom==11){
+		eeprom_write_byte((uint8_t*)(0),frameEeprom[0]);
 		TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
 		addr = totalReg;
-		PORTB|=LED1;
+		flagEeprom = 0; // Acabou de armazenar na EEPROM
+		//PORTB|=LED1;
+		estadoEeprom=0;
 	}
 }
 
 // Interrupção de Timer0
 ISR(TIMER0_OVF_vect){
-	if(contador<5){ // Contagem do timer
-		contador++;
-	}
-	else{
-		save_eeprom();
-		contador = 0;
-	}
+        if(contador<1){ // Contagem do timer
+                contador++;
+        }
+        else{
+                save_eeprom();
+                contador = 0;
+        }
 }
+/*
+ISR(TIMER1_OVF_vect){
+		TCNT1H = TEMP1;
+        TCNT1L = TEMP2;
+        if(hora[0]<59)
+                hora[0]++; // seg
+        else{
+                hora[0]=0;
+                if(hora[1]<59)
+                        hora[1]++; // min
+                else{
+                        hora[1]=0;
+                        if(hora[2]<59)
+                                hora[2]++; // hora
+                        else{
+                                hora[2]=0;
+                                if(data[0]<31)
+                                        data[0]++; // dia
+                                else{
+                                        data[0]=0;
+                                        if(data[1]<12)
+                                                data[1]++; // mes
+                                        else{
+                                                data[1]=0;
+                                                data[2]++; // ano
+                                        }
+                                }
+                        }
+                }
+        }
+}*/
 
+/*
+// Interrupção de Timer1
+ISR(TIMER1_OVF_vect){
+        int TEMP1 = 0xC2; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
+        int TEMP2 = 0xF6;
+        TCNT1H = TEMP1;
+        TCNT1L = TEMP2;
+        PORTB ^= LED3; // Sinaliza em LED
+        if(hora[0]<59)
+                hora[0]++; // seg
+        else{
+                hora[0]=0;
+                if(hora[1]<59)
+                        hora[1]++; // min
+                else{
+                        hora[1]=0;
+                        if(hora[2]<59)
+                                hora[2]++; // hora
+                        else{
+                                hora[2]=0;
+                                if(data[0]<31)
+                                        data[0]++; // dia
+                                else{
+                                        data[0]=0;
+                                        if(data[1]<12)
+                                                data[1]++; // mes
+                                        else{
+                                                data[1]=0;
+                                                data[2]++; // ano
+                                        }
+                                }
+                        }
+                }
+        }
+}
+*/
