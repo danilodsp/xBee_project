@@ -54,9 +54,7 @@ int main(void){
         //CLKPR |= 0x04;
         cont = 8;
         addr = 0;
-        totalReg = 0;
         tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
-        eeprom_write_byte((uint8_t*)addr,totalReg); // 0xFF(addr0x00)
         flagEeprom = 0;
         contador = 0; // contador para Timer
         tam0 = 0;
@@ -106,6 +104,7 @@ int main(void){
 
         // EEPROM
         //uint8_t ByteOfData;
+		totalReg = eeprom_read_byte((uint8_t*)(1));
 
         //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 		//flagTx = 0xFF;
@@ -120,7 +119,6 @@ int main(void){
                 }
 				if((flagTx)&(UCSR0A&(1<<UDRE0))){// &~(UCSR0A|~(1<<TXC0))
 					txbyte();
-					PORTB|=LED1;
 				}
         };
 }
@@ -177,7 +175,8 @@ void txbyte(){
     if(addr==0){
     	//UCSR0B &= ~(1<<TXCIE0);
 		flagTx=0;
-        totalReg=0;
+        totalReg=1;
+		eeprom_write_byte((uint8_t*)(1),totalReg);
     }
     else{
     	addr--;
@@ -233,8 +232,8 @@ ISR(USART_RX_vect){
 
 if(frameAtual[3]==0x92){
         addr=totalReg;
-        
-        addr++;
+
+		addr++;
         frameEeprom[addr]=data[0]; // Dia
         
         addr++;
@@ -287,7 +286,7 @@ if(frameAtual[3]==0x92){
         frameEeprom[addr]='\n'; // Quebra de linha
 
         totalReg=addr;
-        frameEeprom[0]=totalReg;
+        frameEeprom[1]=totalReg;
         flagEeprom=1; // Armazena na EEPROM
         estadoEeprom=0;
 
@@ -323,25 +322,8 @@ if(frameAtual[3]==0x92){
                 if(resposta==0xFE){
 //***************Tratamento de requisição de dados*******************************                        
 
-//UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-/*
-UDR0 = 0x41;
-UDR0 = 0x33;
-
-if((~UCSR0A&(1<<UDRE0))){
-	PORTB|=LED1;
-}
-
-
-_delay_ms(10000);
-_delay_ms(10000);
-_delay_ms(10000);
-_delay_ms(10000);
-
-if(UCSR0A&(1<<UDRE0)){
-	PORTB&=~LED1;
-}*/
-
+addr = totalReg;
+addr--; // Para começar com o endereço da eeprom 1
 
 flagTx=0x20;
 UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
@@ -404,7 +386,10 @@ void save_eeprom(){
                 estadoEeprom=11;
         }
         else if(estadoEeprom==11){
-                eeprom_write_byte((uint8_t*)(0),frameEeprom[0]);
+                eeprom_write_byte((uint8_t*)(1),frameEeprom[1]);
+				if(frameEeprom[1]==12){
+					PORTB |= LED1;
+				}
                 TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
                 addr = totalReg;
                 flagEeprom = 0; // Acabou de armazenar na EEPROM
