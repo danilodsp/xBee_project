@@ -2,61 +2,67 @@
 Programa para MCU Base do "Projeto para Automação usando xBee's"
 MCU: AtMega328P
 */
+
+// ******************** Bibliotecas ********************
 #include <avr/io.h>
 #include <avr/common.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
+// ******************** Clock usado para Delay ********************
 #define F_CPU 1000000UL  // 1 MHz
 
-#define BAUD 103
+// ******************** Definições ********************
+#define BAUD 103 // Baud rate
 #define LED1 0x08 // Envia dados para PC
 #define LED2 0x10 // Recebe dados do xBee (apaga quando manda para PC)
 #define LED3 0x20 // Desliga UART ou Envia dados para xBee
 #define LED4 0x40 // Erro de UART
-/*
-FUSES =
-{
-        .low = LFUSE_DEFAULT,
-        .high = HFUSE_DEFAULT,
-        .extended = EFUSE_DEFAULT,
-};*/
 
-volatile int cont; // Tamanho do frame
+// ******************** Variáveis globais ********************
 volatile char resposta; // Var temporária para recepção de UDR0(UART)
-volatile int addr; // Endereço de EEPROM
-volatile int addr2;
+volatile int cont; // Tamanho do frame usado para enviar dados constantes para PC
+volatile unsigned int contador; // Contador do Timer0
+// EEPROM
+volatile int addr; // Endereço variável da tabela 2 da EEPROM
+volatile int addr2; // Endereço variável da tabela 1 da EEPROM
 volatile int totalReg; // Total de registros da tabela 2 da EEPROM
 volatile int totalRegTab1; // Total de registros da tabela 1 da EEPROM
-volatile int frame[7]; // frame de comando para xBee
-volatile int frameEeprom[11]; // frame para armazenar na EEPROM
-volatile int frameAtual[40]; // frame recebido
-volatile int sensorEeprom[12]; // frame para armazenamento da tabela 1
+// Frames
+volatile int frame[7]; // Frame de comando para xBee
+volatile int frameEeprom[11]; // Frame para armazenar na EEPROM
+volatile int frameAtual[40]; // Frame recebido fica na RAM
+volatile int sensorEeprom[12]; // Frame para armazenamento da tabela 1
+// Flags
 volatile int flagEeprom; // 0- Não precisa armazenar na EEPROM; 1- Precisa
-volatile int flagTab1; // Para armazenar na tabela 1
+volatile int flagTab1; // 1- Precisa armazenar na tabela 1
 volatile int tipoEnvio; // 0- uC pata PC; 1- uC para xBee
-volatile int comand; // Estados
+volatile int flagTx; // 1- Entra em txbyte() e envia dados (TX)
+// Estados
+volatile int comand; // Estados de recebimento de dados (RX)
 volatile int estadoEeprom; // Estados da EEPROM
-volatile unsigned long int checksum;
-volatile int tam0;
-volatile int tam1;
-volatile int i;
-volatile unsigned int contador; // Contador do Timer0
+// Dados de frameAtual
+volatile unsigned long int checksum; // Checksum do frameAtual
+volatile int tam0; // Tamanho L
+volatile int tam1; // Tamanho H
+volatile int i; // Cotrole de posição do frameAtual
 // Hora e Data
 volatile unsigned int hora[3]; // seg, min e hora
 volatile unsigned int data[3]; // dia, mes e ano
 int TEMP1; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
-int TEMP2;
-volatile int flagTx;
-volatile unsigned int aEnviar;
+int TEMP2; // Parte L de TEMP
 
+// ******************** MAIN ********************
 int main(void){
-        DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Saída
-        SREG = 1<<SREG_I;
+		// ******************** Inicialização e configurações ********************
+        DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Pinos de saída
+        SREG = 1<<SREG_I; // Interrpt Enable geral
         //CLKPR |= 1<<CLKPCE;
         //CLKPR |= 0x04;
-        cont = 8;
+
+		// Inicialização de variáveis
+        cont = 8; // Tamanho do frame constante de dados para o PC
         addr = 0;
 		addr2 = 0;
         tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
@@ -70,6 +76,7 @@ int main(void){
         TEMP1 = 0xC2;
         TEMP2 = 0xF6;
 
+		// Inicialização de data e hora
         data[0]=10; // Dia
         data[1]=07; // Mês
         data[2]=11; // Ano
@@ -77,7 +84,8 @@ int main(void){
         hora[1]=29; // Minuto
         hora[2]=19; // Hora
 
-        frame[0] = 0x7E; //7E
+        // Frame constante de dados para o PC
+		frame[0] = 0x7E; //7E
         frame[1] = 0x00; //00
         frame[2] = 0x04; //04
         frame[3] = 0x08; //08
@@ -86,11 +94,7 @@ int main(void){
         frame[6] = 0x4A; //4A
         frame[7] = 0x0D; //0D
 
-        // Button
-        PCICR = 1<<PCIE0; // Habilitando interrupção do PORTB
-        PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2); // Definindo pinos de interrupção PCINT1 (B0)
-
-        // UART0
+        // Configuração de UART0
         UCSR0A &= ~(1<<TXC0); // Última transmissão completa
 		//UCSR0A &= ~(1<<UDRE0); // Buffer vazio
         UCSR0B = (1<<RXEN0)|(1<<TXEN0); // Habilita o RX e TX
@@ -99,23 +103,25 @@ int main(void){
         UBRR0H = (BAUD>>8);
         UCSR0B |= (1<<RXCIE0); // Habilita recepção
 
-        // Timer0
+        // Configuração de Timer0
         TIMSK0 &= ~(1<<TOIE0);
         TCCR0B = 0x05; // Prescaller 1024
 
-        // Timer1
+        // Configuração de Timer1
     	TIMSK1 |= (1<<TOIE1);
     	TCCR1B = 0x05; // Prescaller 1024
 
-        // EEPROM
+        // Configuração de EEPROM
         //uint8_t ByteOfData;
-		totalReg = eeprom_read_byte((uint8_t*)(101));
-		totalRegTab1 = eeprom_read_byte((uint8_t*)(1));  //eeprom_read_byte((uint8_t*)(1));
+		totalReg = eeprom_read_byte((uint8_t*)(101)); // Carrega totalReg
+		totalRegTab1 = eeprom_read_byte((uint8_t*)(1)); // Carrega totalRegTab1
 
-        //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-		//flagTx = 0xFF;
+		/*_delay_ms(1000);
+		eeprom_write_byte((uint8_t*)1,1);
+		_delay_ms(1000);
+		eeprom_write_byte((uint8_t*)101,1);*/
 
-        // Loop
+        // ******************** Loop infinito ********************
         while(1){
                 /*if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
                     PORTB |= LED4;
@@ -123,77 +129,30 @@ int main(void){
                 if(flagEeprom==1){
                     TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
                 }
-				if((flagTx)&(UCSR0A&(1<<UDRE0))){// &~(UCSR0A|~(1<<TXC0))
-					txbyte();
+				if((flagTx)&(UCSR0A&(1<<UDRE0))){ // flagTx e Buffer vazio
+					txbyte(); // Para enviar dados
 				}
         };
 }
-/*
-// Interrupção externa
-ISR(PCINT0_vect){
-        if(PINB&0x01){ // Button1 Envia dados para PC
-                if(addr>0){
-                        UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-                        PORTB |= LED1;
-                        PORTB &= ~LED3;
-                        tipoEnvio = 0;
-                }
-        }
-        else if(PINB&0x02){ // Button2 Desliga a UART
-                UCSR0B = 0x00;
-                PORTB |= LED3;
-        }
-        else if(PINB&0x04){ // Button3 Envia dados para xBee
-                tipoEnvio = 1;
-                cont=0;
-                UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-                PORTB |= LED3;
-        }
-}*/
-/*
-// Interrupção UART TX
-ISR(USART_TX_vect){
-        if(tipoEnvio == 0){
-                UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
-				PORTB|=LED1;
-                //UDR0 = frameEeprom[totalReg-addr];
-                if(addr==0){
-                        UCSR0B &= ~(1<<TXCIE0);
-                        totalReg=0;
-                }
-                else{
-                        addr--;
-                }
-        }
-        else if(tipoEnvio == 1){
-                UDR0 = frame[cont]; // Envia frame da flash
-                cont++;
-                if(cont>7){
-                        UCSR0B &= ~(1<<TXCIE0);
-                }
-        }
-}*/
 
+// ******************** Envio de dados (TX) ********************
 void txbyte(){
 	if(addr2==0){
 		// Enviando tabela 2
-		UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr + 100));
-		if(addr==0){
-			flagTx=0;
-        	totalReg=1;
-			eeprom_write_byte((uint8_t*)(101),totalReg);
-			totalRegTab1=1;
-			_delay_ms(500);
-			eeprom_write_byte((uint8_t*)(1),totalRegTab1);
+		UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr + 100)); // Envia dados da EEPROM
+		if(addr==0){ // Acabou
+			flagTx=0; // Desliga o txbyte()
+        	totalReg=1; // Valor default
+			eeprom_write_byte((uint8_t*)(101),totalReg); // Armazena o valor default
     	}
     	else{
-    		addr--;
+    		addr--; // Decrementa, para incrementar (diferença totalReg-addr)
     	}	
 	}
 	else{
 		// Enviando tabela 1
-		UDR0 = eeprom_read_byte((uint8_t*)(totalRegTab1 - addr2+1));
-		addr2--;	
+		UDR0 = eeprom_read_byte((uint8_t*)(totalRegTab1 - addr2+1)); // Envia dados da EEPROM
+		addr2--; // Decrementa, para incrementar (diferença totalRegTab1-addr2)
 	}
 
 	
@@ -201,24 +160,22 @@ void txbyte(){
 
 // Interrupção UART RX
 ISR(USART_RX_vect){
-        resposta = UDR0;
+        resposta = UDR0; // Recebe do buffer e armazena em uma variável global
         
-
         // Estado 0
         if(comand==0){
                 if(resposta==0x7E){ // Recebe dados do xBee
                 comand = 1; // Próximo estado
-                //PORTB &= ~LED1;
                 }
                 else if(resposta==0x01){ // Recebe comando do PC
-                        comand = 4;
+                        comand = 4; // Próximo estado
                 }
         }
         
         // Estado 1
         else if(comand==1){
                 tam1=resposta; // Primeiro byte do tamanho, MSB
-                checksum = 0;
+                checksum = 0; // Zerando checksum
                 comand = 2; // Próximo estado
                 
         }
@@ -227,10 +184,10 @@ ISR(USART_RX_vect){
         else if(comand==2){
                 tam0 = resposta; // Segundo byte do tamanho, LSB
                 frameAtual[0] = 0x7E; // Armazena os primeiros bytes já conhecidos
-                frameAtual[1] = tam1;
-                frameAtual[2] = tam0;
+                frameAtual[1] = tam1; // ...
+                frameAtual[2] = tam0; // ...
                 
-                i=3;
+                i=3; // Quantidade de byte conhecidos, 0x7E, tam1 e tam0
                 comand = 3; // Próximo estado
         }
 
@@ -239,9 +196,9 @@ ISR(USART_RX_vect){
                 frameAtual[i] = resposta; // Armazena os bytes do xBee
                 checksum += resposta; // Incrementa checksum
 
-                if(i==(tam0+3)){
+                if(i==(tam0+3)){ // Verifica se chegou ao fim do frame
                         
-                        if(checksum&0xFF){
+                        if(checksum&0xFF){ // Verifica se o checksum está correto
 //**************Temos o frame****************************************************
 
 //**************Caso seja um frame de sample*************************************
@@ -251,7 +208,7 @@ if(frameAtual[3]==0x92){
 	sensorEeprom[0]='$'; // Alguma coisa da cabeça de Besch
 	sensorEeprom[1]='A'; // ID H
 	sensorEeprom[2]='0'; // ID L
-	sensorEeprom[3]=frameAtual[4];
+	sensorEeprom[3]=frameAtual[4]; // Endereço do xBee
 	sensorEeprom[4]=frameAtual[5];
 	sensorEeprom[5]=frameAtual[6];
 	sensorEeprom[6]=frameAtual[7];
@@ -259,10 +216,12 @@ if(frameAtual[3]==0x92){
 	sensorEeprom[8]=frameAtual[9];
 	sensorEeprom[9]=frameAtual[10];
 	sensorEeprom[10]=frameAtual[11];
-	sensorEeprom[11]='\n';
+	sensorEeprom[11]='\n'; // 0x0A
 
-	totalRegTab1+=12;
-	flagTab1 = 1;
+	if(existeSerial()==0){ // Verifica se existe outro ID igual na EEPROM
+		totalRegTab1+=12; // Incrementa a contagem de 12 bytes
+		flagTab1 = 1; // Habilita o armazenamento da EEPROM na tabela 1
+	}
 
 
 
@@ -278,7 +237,7 @@ if(frameAtual[3]==0x92){
     frameEeprom[9]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
     frameEeprom[10]='\n'; // Quebra de linha
 
-    totalReg+=11;
+    totalReg+=11; // Incrementa contagem de 11 bytes
     flagEeprom=1; // Armazena na EEPROM
     estadoEeprom=0;   
         
@@ -317,12 +276,65 @@ UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 
 
 
-
-
 //**************Fim do tratamento de dados***************************************
                 }
                 comand = 0; // Próximo estado
         }
+}
+
+int existeSerial(){
+	int j;
+	int total;
+	int serialEeprom[8]; // serial lido da eeprom
+	int serialAtual[8]; // serial do atual frame recebido
+
+	serialAtual[0] = sensorEeprom[3];
+	serialAtual[1] = sensorEeprom[4];
+	serialAtual[2] = sensorEeprom[5];
+	serialAtual[3] = sensorEeprom[6];
+	serialAtual[4] = sensorEeprom[7];
+	serialAtual[5] = sensorEeprom[8];
+	serialAtual[6] = sensorEeprom[9];
+	serialAtual[7] = sensorEeprom[10];
+
+	total = eeprom_read_byte((uint8_t*)(1)); // totalRegTab1 tabela 1
+	j = 5;
+
+	while(j<total){
+		serialEeprom[0] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[1] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[2] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[3] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[4] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[5] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[6] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		serialEeprom[7] = eeprom_read_byte((uint8_t*)(j));
+		j++;
+		
+
+		if((serialAtual[7]==serialEeprom[7])&
+		(serialAtual[6]==serialEeprom[6])&
+		(serialAtual[5]==serialEeprom[5])&
+		(serialAtual[4]==serialEeprom[4])&
+		(serialAtual[3]==serialEeprom[3])&
+		(serialAtual[2]==serialEeprom[2])&
+		(serialAtual[1]==serialEeprom[1])&
+		(serialAtual[0]==serialEeprom[0])){
+			PORTB|=LED1;
+			return 1;
+		}
+
+		j+=4;
+	}
+	
+	return 0;
 }
 
 // Armazena dados na EEPROM
@@ -373,9 +385,6 @@ void save_eeprom(){
         }
         else if(estadoEeprom==11){
                 eeprom_write_byte((uint8_t*)(101),totalReg);
-				if(totalReg==12){
-					PORTB |= LED1;
-				}
                 //PORTB|=LED1;
                 if(flagTab1==1){
 					estadoEeprom=12;
