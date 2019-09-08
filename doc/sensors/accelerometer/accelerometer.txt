@@ -1,0 +1,5 @@
+Triple-axis accelerometer with 3 analog outputs for X, Y and Z axis measurements on a 0.75"x0.75" breakout board. The ADXL335 is the latest and greatest from Analog Devices. Runs from 1.8-3.6 volts (3.3 is suggested), with ratiometric output. That means that 0g measurement output is always at half of the supply voltage Vdd, -3g is at 0v and 3g is at Vdd with full scaling in between. 
+
+Fully assembled and tested. Comes with 6 pin 0.1" standard header in case you want to use it with a breadboard or perfboard. 4 x 0.125" mounting holes for easy attachment. 
+
+See the ADXL335 webpage for datasheets and more

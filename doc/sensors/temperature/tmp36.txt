@@ -1,0 +1,5 @@
+http://www.adafruit.com/index.php?main_page=product_info&cPath=35&products_id=165
+
+Wide range, low power temperature sensor outputs an analog voltage that is proportional to the ambient temperature. To use, connect pin 1 (left) to power (between 2.7 and 5.5V), pin 3 (right) to ground, and pin 2 to analog in on your microcontroller. The voltage out is 0V at -50°C and 1.75V at 125°C. You can easily calculate the temperature from the voltage in millivolts: Temp °C = 100*(reading in V) - 50 
+
+See the webpage for datasheets and more information. For a full tutorial with wiring diagrams, code examples and project ideas, please read the temp. sensor tutorial page!

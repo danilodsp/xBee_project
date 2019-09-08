@@ -1,0 +1,7 @@
+FSRs are sensors that allow you to detect physical pressure, squeezing and weight. They are simple to use and low cost. This sensor is a Interlink model 402 FSR with 12 diameter sensing region. 
+
+FSR's are basically a resistor that changes its resistive value (in ohms O) depending on how much its pressed. These sensors are fairly low cost, and easy to use but they're rarely accurate. They also vary some from sensor to sensor perhaps 10%. So basically when you use FSR's you should only expect to get ranges of response. While FSRs can detect weight, they're a bad choice for detecting exactly how many pounds of weight are on them. 
+
+FSRs are made of plastic and the connection tab is crimped on delicate material. The best way to connect to these is to simply plug them into a breadboard or use a clamp-style connector like alligator clips, female header, or a terminal block. It is possible to solder onto the tabs but you must be very fast because if your iron is not good quality or you dally even a few seconds, you will melt the plastic and ruin the FSR! Don't attempt to solder directly to your FSR unless you are absolutely sure you have the skills to do so. 
+
+For a full tutorial with wiring diagrams, code examples and project ideas, please read the FSR tutorial page!

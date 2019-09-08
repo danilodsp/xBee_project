@@ -1,0 +1,3 @@
+The "poor man's" accelerometer! Tilt sensors are switches that can detect basic motion/orientation. The metal tube has a little metal ball that rolls around in it, when its tilted upright, the ball rolls onto the contacts sticking out of end and shorts them together. 
+
+Be sure to read our detailed tutorial including diagrams and example code.

@@ -1,0 +1,7 @@
+Hall effect sensors detect whether a magnet is near. Useful for non-contact/waterproof type switches, position sensors, rotary/shaft encoders. I tried dozens of different hall effect sensors to see which one would work best for the SpokePOV kit (to determine the wheel location) and this one came out on top! 
+
+Runs at 3.5V up to 24V. To use connect power to pin 1 (all the way to the left), ground to pin 2 (middle) and then a 10K pull up resistor from pin 3 to power. Then listen on pin 3, when the south pole of a magnet is near the front of the sensor, pin 3 will go down to 0V. Otherwise it will stay at whatever the pullup resistor is connected to. Nothing occurs if a magnet's north pole is nearby (unipolar). 
+
+Works fantastic with the high strength magnet Read the datasheet 
+
+Read a nice whitepaper from the manufacturer with many ideas and designs for use
