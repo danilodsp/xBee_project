@@ -115,7 +115,7 @@ int main(void){
 
 		/*
 		// Configuração de interrupção externa
-		EICRA = 0x02; //Interru~pção de borda de descida do INT0 (PIND2)
+		EICRA = 0x02; //Interrupção de borda de descida do INT0 (PIND2)
 		EIMSK = (1<<INT0); // Máscara de registro INT0;
 		*/
 
