@@ -8,7 +8,7 @@ MCU: AtMega328P
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
-//#define F_CPU 1000000UL  // 1 MHz
+#define F_CPU 1000000UL  // 1 MHz
 
 #define BAUD 103
 #define LED1 0x08 // Envia dados para PC
@@ -29,8 +29,14 @@ volatile int addr; // Endereço de EEPROM
 volatile int totalReg; // Total de registro da EEPROM
 volatile int frame[7]; // frame de comando para xBee
 volatile int frameEeprom[40]; // frame para armazenar na EEPROM
+volatile int frameAtual[40]; // frame recebido
 volatile int flagEeprom; // 0- Não precisa armazenar na EEPROM; 1- Precisa
 volatile int tipoEnvio; // 0- uC pata PC; 1- uC para xBee
+volatile int comand; // Estados
+volatile unsigned long int checksum;
+volatile int tam0;
+volatile int tam1;
+volatile int i;
 volatile unsigned int contador; // Contador do Timer0
 
 int main(void){
@@ -40,11 +46,15 @@ int main(void){
 	//CLKPR = 0x04;
 	cont = 8;
 	addr = 0;
-	totalReg = 0xFF;
+	totalReg = 0;
 	tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
 	eeprom_write_byte((uint8_t*)addr,totalReg); // 0xFF(addr0x00)
 	flagEeprom = 0;
-	contador = 0;
+	contador = 0; // contador para Timer
+	tam0 = 0;
+	tam1 = 0;
+	comand = 0;
+	checksum = 0;
 
 	frame[0] = 0x7E; //7E
 	frame[1] = 0x00; //00
@@ -74,23 +84,19 @@ int main(void){
 	// EEPROM
 	//uint8_t ByteOfData;
 
-	// Loop
-	while(1){/*
-		if(cont<8){
-			UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-		}else{
-			UCSR0B &= ~(1<<TXCIE0);
-		}*/
+	//UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 
+	// Loop
+	while(1){
 		if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
 			PORTB |= LED4;
 		}
 		if(flagEeprom==1){
-			TIMSK0 |= (1<<TXEN0)|(1<<TOIE0);
+			TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
 		}
 	};
 }
-
+/*
 // Interrupção externa
 ISR(PCINT0_vect){
 	if(PINB&0x01){ // Button1 Envia dados para PC
@@ -111,7 +117,7 @@ ISR(PCINT0_vect){
 		UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 		PORTB |= LED3;
 	}
-}
+}*/
 
 // Interrupção UART TX
 ISR(USART_TX_vect){
@@ -120,14 +126,14 @@ ISR(USART_TX_vect){
 		//UDR0 = frameEeprom[totalReg-addr];
 		if(addr==0){
 			UCSR0B &= ~(1<<TXCIE0);
-			PORTB &= ~LED2;
+			totalReg=0;
 		}
 		else{
 			addr--;
 		}
 	}
 	else if(tipoEnvio == 1){
-		UDR0 = frame[cont];
+		UDR0 = frame[cont]; // Envia frame da flash
 		cont++;
 		if(cont>7){
 			UCSR0B &= ~(1<<TXCIE0);
@@ -138,14 +144,100 @@ ISR(USART_TX_vect){
 // Interrupção UART RX
 ISR(USART_RX_vect){
 	resposta = UDR0;
+	
+
+	// Estado 0
+	if(comand==0){
+		if(resposta==0x7E){ // Recebe dados do xBee
+		comand = 1; // Próximo estado
+		PORTB &= ~(LED1);
+		}
+		else if(resposta==0x01){ // Recebe comando do PC
+			comand = 4;
+		}
+	}
+	
+	// Estado 1
+	else if(comand==1){
+		tam1=resposta; // Primeiro byte do tamanho, MSB
+		checksum = 0;
+		comand = 2; // Próximo estado
+		
+	}
+
+	// Estado 2
+	else if(comand==2){
+		tam0 = resposta; // Segundo byte do tamanho, LSB
+		frameAtual[0] = 0x7E; // Armazena os primeiros bytes já conhecidos
+		frameAtual[1] = tam1;
+		frameAtual[2] = tam0;
+		
+		i=3;
+		comand = 3; // Próximo estado
+	}
+
+	// Estado 3
+	else if(comand==3){
+		frameAtual[i] = resposta; // Armazena os bytes do xBee
+		checksum += resposta; // Incrementa checksum
+
+		if(i==(tam0+3)){
+			
+			if(checksum&0xFF){
+//**************Temos o frame****************************************************
+
+//**************Caso seja um frame de sample*************************************
+
+if(frameAtual[3]==0x92){
+	addr=totalReg;
 	addr++;
-	frameEeprom[addr] = resposta;
-	//eeprom_write_byte((uint8_t*)addr,resposta);
-	totalReg = addr;
-	frameEeprom[0] = totalReg;
-	eeprom_write_byte((uint8_t*)0,totalReg);
-	PORTB |= LED2;
-	flagEeprom=1; // Salvar na EEPROM
+	frameEeprom[addr]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
+	addr++;
+	frameEeprom[addr]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
+	totalReg=addr;
+	frameEeprom[0]=totalReg;
+	flagEeprom=1; // Armazena na EEPROM
+	PORTB &= ~(LED1);
+
+	/*if(totalReg==6){
+		PORTB|=LED1;
+	}*/
+	
+	
+
+
+
+
+
+
+
+}
+
+//**************Fim do tratamento de sample**************************************
+
+//**************Fim do tratamento de frame***************************************
+			}
+			comand=0; // Próximo estado
+		}	
+		i++;	
+	}
+
+	// Estado 4
+	else if(comand==4){
+		if(resposta==0xFE){
+//***************Tratamento de requisição de dados*******************************			
+
+UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+
+
+
+
+
+
+//**************Fim do tratamento de dados***************************************
+		}
+		comand = 0; // Próximo estado
+	}
 }
 
 // Armazena dados na EEPROM
@@ -155,14 +247,15 @@ void save_eeprom(){
 	if(addr<1){
 		eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[totalReg]);
 		flagEeprom = 0; // Acabou de armazenar na EEPROM
-		TIMSK0 &= ~(1<<TOIE0);
+		TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
 		addr = totalReg;
+		PORTB|=LED1;
 	}
 }
 
 // Interrupção de Timer0
 ISR(TIMER0_OVF_vect){
-	if(contador<50){
+	if(contador<5){ // Contagem do timer
 		contador++;
 	}
 	else{
