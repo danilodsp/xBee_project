@@ -95,11 +95,11 @@ int main(void){
         // Timer0
         TIMSK0 &= ~(1<<TOIE0);
         TCCR0B = 0x05; // Prescaller 1024
-/*
+
         // Timer1
-    TIMSK1 &= ~(1<<TOIE1);
-    TCCR1B = 0x05; // Prescaller 1024
-*/
+    	TIMSK1 |= (1<<TOIE1);
+    	TCCR1B = 0x05; // Prescaller 1024
+
         // EEPROM
         //uint8_t ByteOfData;
 
@@ -374,46 +374,10 @@ ISR(TIMER0_OVF_vect){
                 contador = 0;
         }
 }
-/*
-ISR(TIMER1_OVF_vect){
-                TCNT1H = TEMP1;
-        TCNT1L = TEMP2;
-        if(hora[0]<59)
-                hora[0]++; // seg
-        else{
-                hora[0]=0;
-                if(hora[1]<59)
-                        hora[1]++; // min
-                else{
-                        hora[1]=0;
-                        if(hora[2]<59)
-                                hora[2]++; // hora
-                        else{
-                                hora[2]=0;
-                                if(data[0]<31)
-                                        data[0]++; // dia
-                                else{
-                                        data[0]=0;
-                                        if(data[1]<12)
-                                                data[1]++; // mes
-                                        else{
-                                                data[1]=0;
-                                                data[2]++; // ano
-                                        }
-                                }
-                        }
-                }
-        }
-}*/
 
-/*
-// Interrupção de Timer1
 ISR(TIMER1_OVF_vect){
-        int TEMP1 = 0xC2; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
-        int TEMP2 = 0xF6;
         TCNT1H = TEMP1;
         TCNT1L = TEMP2;
-        PORTB ^= LED3; // Sinaliza em LED
         if(hora[0]<59)
                 hora[0]++; // seg
         else{
@@ -441,4 +405,3 @@ ISR(TIMER1_OVF_vect){
                 }
         }
 }
-*/
