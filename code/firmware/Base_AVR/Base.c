@@ -231,62 +231,19 @@ ISR(USART_RX_vect){
 //**************Caso seja um frame de sample*************************************
 
 if(frameAtual[3]==0x92){
-        addr=totalReg;
+        frameEeprom[0]=data[0]; // Dia
+        frameEeprom[1]=data[1]; // Mês
+        frameEeprom[2]=data[2]; // Ano
+        frameEeprom[3]=hora[2]; // Hora
+        frameEeprom[4]=hora[1]; // Minuto
+        frameEeprom[5]=hora[0]; // Segundo
+        frameEeprom[6]='A'; // ID_H
+        frameEeprom[7]='0'; // ID_L
+        frameEeprom[8]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
+        frameEeprom[9]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
+        frameEeprom[10]='\n'; // Quebra de linha
 
-		addr++;
-        frameEeprom[addr]=data[0]; // Dia
-        
-        addr++;
-        frameEeprom[addr]=data[1]; // Mês
-
-        addr++;
-        frameEeprom[addr]=data[2]; // Ano
-
-        addr++;
-        frameEeprom[addr]=hora[2]; // Hora
-
-        addr++;
-        frameEeprom[addr]=hora[1]; // Minuto
-
-        addr++;
-        frameEeprom[addr]=hora[0]; // Segundo
-
-        /*
-        addr++;
-        frameEeprom[addr]=26; // Dia
-        
-        addr++;
-        frameEeprom[addr]=05; // Mês
-
-        addr++;
-        frameEeprom[addr]=11; // Ano
-
-        addr++;
-        frameEeprom[addr]=15; // Hora
-
-        addr++;
-        frameEeprom[addr]=36; // Minuto
-
-        addr++;
-        frameEeprom[addr]=21; // Segundo*/
-
-        addr++;
-        frameEeprom[addr]='A'; // ID_H
-
-        addr++;
-        frameEeprom[addr]='0'; // ID_L
-
-        addr++;
-        frameEeprom[addr]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
-
-        addr++;
-        frameEeprom[addr]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
-
-        addr++;
-        frameEeprom[addr]='\n'; // Quebra de linha
-
-        totalReg=addr;
-        frameEeprom[1]=totalReg;
+        totalReg+=11;
         flagEeprom=1; // Armazena na EEPROM
         estadoEeprom=0;
 
@@ -342,56 +299,55 @@ UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 // Armazena dados na EEPROM
 void save_eeprom(){
         if(estadoEeprom==0){
-                eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[totalReg]);
+                eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[10]);
                 estadoEeprom=1;
         }
         else if(estadoEeprom==1){
-                eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[totalReg-1]);
+                eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[9]);
                 estadoEeprom=2;
         }
         else if(estadoEeprom==2){
-                eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[totalReg-2]);
+                eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[8]);
                 estadoEeprom=3;
         }
         else if(estadoEeprom==3){
-                eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[totalReg-3]);
+                eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[7]);
                 estadoEeprom=4;
         }
         else if(estadoEeprom==4){
-                eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[totalReg-4]);
+                eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[6]);
                 estadoEeprom=5;
         }
         else if(estadoEeprom==5){
-                eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[totalReg-5]);
+                eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[5]);
                 estadoEeprom=6;
         }
         else if(estadoEeprom==6){
-                eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[totalReg-6]);
+                eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[4]);
                 estadoEeprom=7;
         }
         else if(estadoEeprom==7){
-                eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[totalReg-7]);
+                eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[3]);
                 estadoEeprom=8;
         }
         else if(estadoEeprom==8){
-                eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[totalReg-8]);
+                eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[2]);
                 estadoEeprom=9;
         }
         else if(estadoEeprom==9){
-                eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[totalReg-9]);
+                eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[1]);
                 estadoEeprom=10;
         }
         else if(estadoEeprom==10){
-                eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[totalReg-10]);
+                eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[0]);
                 estadoEeprom=11;
         }
         else if(estadoEeprom==11){
-                eeprom_write_byte((uint8_t*)(1),frameEeprom[1]);
-				if(frameEeprom[1]==12){
+                eeprom_write_byte((uint8_t*)(1),totalReg);
+				if(totalReg==12){
 					PORTB |= LED1;
 				}
                 TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
-                addr = totalReg;
                 flagEeprom = 0; // Acabou de armazenar na EEPROM
                 //PORTB|=LED1;
                 estadoEeprom=0;
