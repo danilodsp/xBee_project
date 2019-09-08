@@ -18,9 +18,9 @@ MCU: AtMega328P
 /*
 FUSES =
 {
-	.low = LFUSE_DEFAULT,
-	.high = HFUSE_DEFAULT,
-	.extended = EFUSE_DEFAULT,
+        .low = LFUSE_DEFAULT,
+        .high = HFUSE_DEFAULT,
+        .extended = EFUSE_DEFAULT,
 };*/
 
 volatile int cont; // Tamanho do frame
@@ -46,232 +46,232 @@ int TEMP1; // Recarrego com o necessário que falta para 1seg em 16bits(16MHz)
 int TEMP2;
 
 int main(void){
-	DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Saída
-	SREG = 1<<SREG_I;
-	//CLKPR |= 1<<CLKPCE;
-	//CLKPR |= 0x04;
-	cont = 8;
-	addr = 0;
-	totalReg = 0;
-	tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
-	eeprom_write_byte((uint8_t*)addr,totalReg); // 0xFF(addr0x00)
-	flagEeprom = 0;
-	contador = 0; // contador para Timer
-	tam0 = 0;
-	tam1 = 0;
-	comand = 0;
-	checksum = 0;
-	TEMP1 = 0xC2;
-	TEMP2 = 0xF6;
+        DDRB = (1<<DDB3)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7); // Saída
+        SREG = 1<<SREG_I;
+        //CLKPR |= 1<<CLKPCE;
+        //CLKPR |= 0x04;
+        cont = 8;
+        addr = 0;
+        totalReg = 0;
+        tipoEnvio = 0; // 0- Envia frame para UART_TX ;1- Envia dados da EEPROM para UART_TX
+        eeprom_write_byte((uint8_t*)addr,totalReg); // 0xFF(addr0x00)
+        flagEeprom = 0;
+        contador = 0; // contador para Timer
+        tam0 = 0;
+        tam1 = 0;
+        comand = 0;
+        checksum = 0;
+        TEMP1 = 0xC2;
+        TEMP2 = 0xF6;
 
-	data[0]=10; // Dia
-	data[1]=07; // Mês
-	data[2]=11; // Ano
-	hora[0]=55; // Segundo
-	hora[1]=29; // Minuto
-	hora[2]=19; // Hora
+        data[0]=10; // Dia
+        data[1]=07; // Mês
+        data[2]=11; // Ano
+        hora[0]=55; // Segundo
+        hora[1]=29; // Minuto
+        hora[2]=19; // Hora
 
-	frame[0] = 0x7E; //7E
-	frame[1] = 0x00; //00
-	frame[2] = 0x04; //04
-	frame[3] = 0x08; //08
-	frame[4] = 0x52; //52
-	frame[5] = 0x4E; //4E
-	frame[6] = 0x4A; //4A
-	frame[7] = 0x0D; //0D
+        frame[0] = 0x7E; //7E
+        frame[1] = 0x00; //00
+        frame[2] = 0x04; //04
+        frame[3] = 0x08; //08
+        frame[4] = 0x52; //52
+        frame[5] = 0x4E; //4E
+        frame[6] = 0x4A; //4A
+        frame[7] = 0x0D; //0D
 
-	// Button
-	PCICR = 1<<PCIE0; // Habilitando interrupção do PORTB
-	PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2); // Definindo pinos de interrupção PCINT1 (B0)
+        // Button
+        PCICR = 1<<PCIE0; // Habilitando interrupção do PORTB
+        PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2); // Definindo pinos de interrupção PCINT1 (B0)
 
-	// UART0
-	UCSR0A &= ~(1<<TXC0); // Última transmissão completa
-	UCSR0B = (1<<RXEN0)|(1<<TXEN0); // Habilita o RX e TX
-	UCSR0C = 0x06; // 8bits de transmissão
-	UBRR0L = BAUD; // Set Baud Rate
-	UBRR0H = (BAUD>>8);
-	UCSR0B |= (1<<RXCIE0); // Habilita recepção
+        // UART0
+        UCSR0A &= ~(1<<TXC0); // Última transmissão completa
+        UCSR0B = (1<<RXEN0)|(1<<TXEN0); // Habilita o RX e TX
+        UCSR0C = 0x06; // 8bits de transmissão
+        UBRR0L = BAUD; // Set Baud Rate
+        UBRR0H = (BAUD>>8);
+        UCSR0B |= (1<<RXCIE0); // Habilita recepção
 
-	// Timer0
-	TIMSK0 &= ~(1<<TOIE0);
-	TCCR0B = 0x05; // Prescaller 1024
+        // Timer0
+        TIMSK0 &= ~(1<<TOIE0);
+        TCCR0B = 0x05; // Prescaller 1024
 /*
-	// Timer1
+        // Timer1
     TIMSK1 &= ~(1<<TOIE1);
     TCCR1B = 0x05; // Prescaller 1024
 */
-	// EEPROM
-	//uint8_t ByteOfData;
+        // EEPROM
+        //uint8_t ByteOfData;
 
-	//UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+        //UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
 
-	// Loop
-	while(1){
-		if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
-			PORTB |= LED4;
-		}
-		if(flagEeprom==1){
-			TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
-		}
-	};
+        // Loop
+        while(1){
+                if((UCSR0A&FE0)|(UCSR0A&DOR0)|(UCSR0A&UPE0)){ // Tratamento de erro de UART
+                        PORTB |= LED4;
+                }
+                if(flagEeprom==1){
+                        TIMSK0 |= (1<<TXEN0)|(1<<TOIE0); // Liga o Timer
+                }
+        };
 }
 /*
 // Interrupção externa
 ISR(PCINT0_vect){
-	if(PINB&0x01){ // Button1 Envia dados para PC
-		if(addr>0){
-			UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-			PORTB |= LED1;
-			PORTB &= ~LED3;
-			tipoEnvio = 0;
-		}
-	}
-	else if(PINB&0x02){ // Button2 Desliga a UART
-		UCSR0B = 0x00;
-		PORTB |= LED3;
-	}
-	else if(PINB&0x04){ // Button3 Envia dados para xBee
-		tipoEnvio = 1;
-		cont=0;
-		UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-		PORTB |= LED3;
-	}
+        if(PINB&0x01){ // Button1 Envia dados para PC
+                if(addr>0){
+                        UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+                        PORTB |= LED1;
+                        PORTB &= ~LED3;
+                        tipoEnvio = 0;
+                }
+        }
+        else if(PINB&0x02){ // Button2 Desliga a UART
+                UCSR0B = 0x00;
+                PORTB |= LED3;
+        }
+        else if(PINB&0x04){ // Button3 Envia dados para xBee
+                tipoEnvio = 1;
+                cont=0;
+                UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
+                PORTB |= LED3;
+        }
 }*/
 
 // Interrupção UART TX
 ISR(USART_TX_vect){
-	if(tipoEnvio == 0){
-		UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
-		//UDR0 = frameEeprom[totalReg-addr];
-		if(addr==0){
-			UCSR0B &= ~(1<<TXCIE0);
-			totalReg=0;
-		}
-		else{
-			addr--;
-		}
-	}
-	else if(tipoEnvio == 1){
-		UDR0 = frame[cont]; // Envia frame da flash
-		cont++;
-		if(cont>7){
-			UCSR0B &= ~(1<<TXCIE0);
-		}
-	}
+        if(tipoEnvio == 0){
+                UDR0 = eeprom_read_byte((uint8_t*)(totalReg - addr));
+                //UDR0 = frameEeprom[totalReg-addr];
+                if(addr==0){
+                        UCSR0B &= ~(1<<TXCIE0);
+                        totalReg=0;
+                }
+                else{
+                        addr--;
+                }
+        }
+        else if(tipoEnvio == 1){
+                UDR0 = frame[cont]; // Envia frame da flash
+                cont++;
+                if(cont>7){
+                        UCSR0B &= ~(1<<TXCIE0);
+                }
+        }
 }
 
 // Interrupção UART RX
 ISR(USART_RX_vect){
-	resposta = UDR0;
-	
+        resposta = UDR0;
+        
 
-	// Estado 0
-	if(comand==0){
-		if(resposta==0x7E){ // Recebe dados do xBee
-		comand = 1; // Próximo estado
-		PORTB &= ~LED1;
-		}
-		else if(resposta==0x01){ // Recebe comando do PC
-			comand = 4;
-		}
-	}
-	
-	// Estado 1
-	else if(comand==1){
-		tam1=resposta; // Primeiro byte do tamanho, MSB
-		checksum = 0;
-		comand = 2; // Próximo estado
-		
-	}
+        // Estado 0
+        if(comand==0){
+                if(resposta==0x7E){ // Recebe dados do xBee
+                comand = 1; // Próximo estado
+                //PORTB &= ~LED1;
+                }
+                else if(resposta==0x01){ // Recebe comando do PC
+                        comand = 4;
+                }
+        }
+        
+        // Estado 1
+        else if(comand==1){
+                tam1=resposta; // Primeiro byte do tamanho, MSB
+                checksum = 0;
+                comand = 2; // Próximo estado
+                
+        }
 
-	// Estado 2
-	else if(comand==2){
-		tam0 = resposta; // Segundo byte do tamanho, LSB
-		frameAtual[0] = 0x7E; // Armazena os primeiros bytes já conhecidos
-		frameAtual[1] = tam1;
-		frameAtual[2] = tam0;
-		
-		i=3;
-		comand = 3; // Próximo estado
-	}
+        // Estado 2
+        else if(comand==2){
+                tam0 = resposta; // Segundo byte do tamanho, LSB
+                frameAtual[0] = 0x7E; // Armazena os primeiros bytes já conhecidos
+                frameAtual[1] = tam1;
+                frameAtual[2] = tam0;
+                
+                i=3;
+                comand = 3; // Próximo estado
+        }
 
-	// Estado 3
-	else if(comand==3){
-		frameAtual[i] = resposta; // Armazena os bytes do xBee
-		checksum += resposta; // Incrementa checksum
+        // Estado 3
+        else if(comand==3){
+                frameAtual[i] = resposta; // Armazena os bytes do xBee
+                checksum += resposta; // Incrementa checksum
 
-		if(i==(tam0+3)){
-			
-			if(checksum&0xFF){
+                if(i==(tam0+3)){
+                        
+                        if(checksum&0xFF){
 //**************Temos o frame****************************************************
 
 //**************Caso seja um frame de sample*************************************
 
 if(frameAtual[3]==0x92){
-	addr=totalReg;
-	
-	addr++;
-	frameEeprom[addr]=data[0]; // Dia
-	
-	addr++;
-	frameEeprom[addr]=data[1]; // Mês
+        addr=totalReg;
+        
+        addr++;
+        frameEeprom[addr]=data[0]; // Dia
+        
+        addr++;
+        frameEeprom[addr]=data[1]; // Mês
 
-	addr++;
-	frameEeprom[addr]=data[2]; // Ano
+        addr++;
+        frameEeprom[addr]=data[2]; // Ano
 
-	addr++;
-	frameEeprom[addr]=hora[2]; // Hora
+        addr++;
+        frameEeprom[addr]=hora[2]; // Hora
 
-	addr++;
-	frameEeprom[addr]=hora[1]; // Minuto
+        addr++;
+        frameEeprom[addr]=hora[1]; // Minuto
 
-	addr++;
-	frameEeprom[addr]=hora[0]; // Segundo
+        addr++;
+        frameEeprom[addr]=hora[0]; // Segundo
 
-	/*
-	addr++;
-	frameEeprom[addr]=26; // Dia
-	
-	addr++;
-	frameEeprom[addr]=05; // Mês
+        /*
+        addr++;
+        frameEeprom[addr]=26; // Dia
+        
+        addr++;
+        frameEeprom[addr]=05; // Mês
 
-	addr++;
-	frameEeprom[addr]=11; // Ano
+        addr++;
+        frameEeprom[addr]=11; // Ano
 
-	addr++;
-	frameEeprom[addr]=15; // Hora
+        addr++;
+        frameEeprom[addr]=15; // Hora
 
-	addr++;
-	frameEeprom[addr]=36; // Minuto
+        addr++;
+        frameEeprom[addr]=36; // Minuto
 
-	addr++;
-	frameEeprom[addr]=21; // Segundo*/
+        addr++;
+        frameEeprom[addr]=21; // Segundo*/
 
-	addr++;
-	frameEeprom[addr]='A'; // ID_H
+        addr++;
+        frameEeprom[addr]='A'; // ID_H
 
-	addr++;
-	frameEeprom[addr]='0'; // ID_L
+        addr++;
+        frameEeprom[addr]='0'; // ID_L
 
-	addr++;
-	frameEeprom[addr]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
+        addr++;
+        frameEeprom[addr]=frameAtual[tam0+1]; // Armazena os dados na EEPROM
 
-	addr++;
-	frameEeprom[addr]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
+        addr++;
+        frameEeprom[addr]=frameAtual[tam0+2]; // Armazena os dados na EEPROM
 
-	addr++;
-	frameEeprom[addr]='\n'; // Quebra de linha
+        addr++;
+        frameEeprom[addr]='\n'; // Quebra de linha
 
-	totalReg=addr;
-	frameEeprom[0]=totalReg;
-	flagEeprom=1; // Armazena na EEPROM
-	estadoEeprom=0;
-	
-	//PORTB &= ~LED1;
-	
-	
-	
-	
+        totalReg=addr;
+        frameEeprom[0]=totalReg;
+        flagEeprom=1; // Armazena na EEPROM
+        estadoEeprom=0;
+        
+        PORTB &= ~LED1;
+        
+        
+        
+        
 
 
 
@@ -284,84 +284,84 @@ if(frameAtual[3]==0x92){
 //**************Fim do tratamento de sample**************************************
 
 //**************Fim do tratamento de frame***************************************
-			}
-			comand=0; // Próximo estado
-		}	
-		i++;	
-	}
+                        }
+                        comand=0; // Próximo estado
+                }        
+                i++;        
+        }
 
-	// Estado 4
-	else if(comand==4){
-		if(resposta==0xFE){
-//***************Tratamento de requisição de dados*******************************			
+        // Estado 4
+        else if(comand==4){
+                if(resposta==0xFE){
+//***************Tratamento de requisição de dados*******************************                        
 
 UCSR0B |= (1<<TXEN0)|(1<<TXCIE0);
-PORTB|=LED1;
+//PORTB|=LED1;
 
 
 
 
 
 //**************Fim do tratamento de dados***************************************
-		}
-		comand = 0; // Próximo estado
-	}
+                }
+                comand = 0; // Próximo estado
+        }
 }
 
 // Armazena dados na EEPROM
 void save_eeprom(){
-	if(estadoEeprom==0){
-		eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[totalReg]);
-		estadoEeprom=1;
-	}
-	else if(estadoEeprom==1){
-		eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[totalReg-1]);
-		estadoEeprom=2;
-	}
-	else if(estadoEeprom==2){
-		eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[totalReg-2]);
-		estadoEeprom=3;
-	}
-	else if(estadoEeprom==3){
-		eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[totalReg-3]);
-		estadoEeprom=4;
-	}
-	else if(estadoEeprom==4){
-		eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[totalReg-4]);
-		estadoEeprom=5;
-	}
-	else if(estadoEeprom==5){
-		eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[totalReg-5]);
-		estadoEeprom=6;
-	}
-	else if(estadoEeprom==6){
-		eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[totalReg-6]);
-		estadoEeprom=7;
-	}
-	else if(estadoEeprom==7){
-		eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[totalReg-7]);
-		estadoEeprom=8;
-	}
-	else if(estadoEeprom==8){
-		eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[totalReg-8]);
-		estadoEeprom=9;
-	}
-	else if(estadoEeprom==9){
-		eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[totalReg-9]);
-		estadoEeprom=10;
-	}
-	else if(estadoEeprom==10){
-		eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[totalReg-10]);
-		estadoEeprom=11;
-	}
-	else if(estadoEeprom==11){
-		eeprom_write_byte((uint8_t*)(0),frameEeprom[0]);
-		TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
-		addr = totalReg;
-		flagEeprom = 0; // Acabou de armazenar na EEPROM
-		//PORTB|=LED1;
-		estadoEeprom=0;
-	}
+        if(estadoEeprom==0){
+                eeprom_write_byte((uint8_t*)(totalReg),frameEeprom[totalReg]);
+                estadoEeprom=1;
+        }
+        else if(estadoEeprom==1){
+                eeprom_write_byte((uint8_t*)(totalReg-1),frameEeprom[totalReg-1]);
+                estadoEeprom=2;
+        }
+        else if(estadoEeprom==2){
+                eeprom_write_byte((uint8_t*)(totalReg-2),frameEeprom[totalReg-2]);
+                estadoEeprom=3;
+        }
+        else if(estadoEeprom==3){
+                eeprom_write_byte((uint8_t*)(totalReg-3),frameEeprom[totalReg-3]);
+                estadoEeprom=4;
+        }
+        else if(estadoEeprom==4){
+                eeprom_write_byte((uint8_t*)(totalReg-4),frameEeprom[totalReg-4]);
+                estadoEeprom=5;
+        }
+        else if(estadoEeprom==5){
+                eeprom_write_byte((uint8_t*)(totalReg-5),frameEeprom[totalReg-5]);
+                estadoEeprom=6;
+        }
+        else if(estadoEeprom==6){
+                eeprom_write_byte((uint8_t*)(totalReg-6),frameEeprom[totalReg-6]);
+                estadoEeprom=7;
+        }
+        else if(estadoEeprom==7){
+                eeprom_write_byte((uint8_t*)(totalReg-7),frameEeprom[totalReg-7]);
+                estadoEeprom=8;
+        }
+        else if(estadoEeprom==8){
+                eeprom_write_byte((uint8_t*)(totalReg-8),frameEeprom[totalReg-8]);
+                estadoEeprom=9;
+        }
+        else if(estadoEeprom==9){
+                eeprom_write_byte((uint8_t*)(totalReg-9),frameEeprom[totalReg-9]);
+                estadoEeprom=10;
+        }
+        else if(estadoEeprom==10){
+                eeprom_write_byte((uint8_t*)(totalReg-10),frameEeprom[totalReg-10]);
+                estadoEeprom=11;
+        }
+        else if(estadoEeprom==11){
+                eeprom_write_byte((uint8_t*)(0),frameEeprom[0]);
+                TIMSK0 &= ~(1<<TOIE0); // Desliga o Timer
+                addr = totalReg;
+                flagEeprom = 0; // Acabou de armazenar na EEPROM
+                PORTB|=LED1;
+                estadoEeprom=0;
+        }
 }
 
 // Interrupção de Timer0
@@ -376,7 +376,7 @@ ISR(TIMER0_OVF_vect){
 }
 /*
 ISR(TIMER1_OVF_vect){
-		TCNT1H = TEMP1;
+                TCNT1H = TEMP1;
         TCNT1L = TEMP2;
         if(hora[0]<59)
                 hora[0]++; // seg
